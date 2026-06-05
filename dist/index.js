@@ -1,10 +1,6 @@
+import MealApi from "./types/MealApi.js";
 const form = document.getElementById("find-form");
-const _URL_SEARCH = "https://www.themealdb.com/api/json/v1/1/search.php?s=";
-async function getMealsByName(name) {
-    const response = await fetch(`${_URL_SEARCH}${name}`);
-    const data = await response.json();
-    return data.meals;
-}
+displayCategories();
 function displayMeals(meals) {
     const container = document.querySelector(".container");
     if (meals.length === 0) {
@@ -33,14 +29,57 @@ function displayMeals(meals) {
         container.appendChild(title);
     }
 }
+function displayCategories() {
+    const mealApi = new MealApi();
+    mealApi.getCategories().then((categories) => {
+        const container = document.getElementById("categories-container");
+        categories.forEach((category) => {
+            const col = document.createElement("div");
+            col.classList.add("col-md-3");
+            const img = document.createElement("img");
+            img.src = category.strCategoryThumb;
+            img.alt = category.strCategory;
+            img.style.width = "100%";
+            img.style.borderRadius = "8px";
+            img.style.boxShadow = "0 4px 8px rgba(0, 0, 0, 0.1)";
+            img.style.transition = "transform 0.3s ease";
+            img.addEventListener("mouseover", () => {
+                img.style.transform = "scale(1.05)";
+            });
+            col.appendChild(img);
+            container.appendChild(col);
+            const button = document.createElement("button");
+            button.classList.add("btn", "btn-outline-primary", "w-100");
+            button.setAttribute("data-category", JSON.stringify(category));
+            button.setAttribute("data-bs-toggle", "modal");
+            button.setAttribute("data-bs-target", "#mealModal");
+            button.textContent = category.strCategory;
+            col.appendChild(button);
+            container.appendChild(col);
+            button.addEventListener("click", () => {
+                const category = JSON.parse(button.getAttribute("data-category"));
+                const modal = document.getElementById("mealModal");
+                if (modal !== null) {
+                    modal.querySelector(".modal-title").textContent =
+                        category.strCategory;
+                    const modalBody = modal.querySelector(".modal-body");
+                    modalBody.innerHTML = `
+          <img src="${category.strCategoryThumb}" alt="${category.strCategory}" class="img-fluid mb-3" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+          <p>${category.strCategoryDescription}</p>
+        `;
+                }
+            });
+        });
+    });
+}
 if (form) {
     form.addEventListener("submit", (e) => {
         e.preventDefault();
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
-        getMealsByName(data.search).then((meals) => {
+        const mealApi = new MealApi();
+        mealApi.getMealsByName(data.search).then((meals) => {
             displayMeals(meals);
         });
     });
 }
-export {};
